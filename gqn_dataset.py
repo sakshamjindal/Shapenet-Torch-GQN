@@ -86,8 +86,19 @@ class GQNDataset_pdisco(Dataset):
         self.target_res = 64
         self.N = 10
         self.few_shot = few_shot
+        
+        if root_dir.endswith("txt"):
+            data  = []
 
-        self.all_files = [os.path.join(root_dir,f) for f in os.listdir(root_dir) if f.endswith('.p')]
+            with open(root_dir) as f:
+                lines = f.readlines()
+
+                for line in lines:
+                    data.append(line.split()[0])
+
+            self.all_files = [os.path.join(os.path.dirname(root_dir),f) for f in data if f.endswith('.p')]
+        else:
+            self.all_files = [os.path.join(root_dir,f) for f in os.listdir(root_dir) if f.endswith('.p')]
 
     def __len__(self):
         # return len(os.listdir(self.root_dir))
@@ -125,7 +136,8 @@ class GQNDataset_pdisco(Dataset):
         # img_save = images.cpu().numpy()
         # plt.imsave("/home/shamitl/tmp/gqn_rgb_resized.jpg", img_save[0])
 
-        
+        return images,viewpoints, {}
+    
         bbox_origin = data['bbox_origin']
         pix_T_cams_raw = data['pix_T_cams_raw']
         # print("Pixt camXs shape: ", pix_T_cams_raw.shape)
@@ -177,7 +189,7 @@ def sample_batch(x_data, v_data, D, M=None, seed=None):
 
     # Sample number of views
     if not M:
-        M = random.randint(1, K)
+        M = random.randint(2, K-1)
 
     context_idx = random.sample(range(x_data.size(1)), M)
     query_idx = random.randint(0, x_data.size(1)-1)

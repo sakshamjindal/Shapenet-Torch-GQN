@@ -26,6 +26,11 @@ python train.py --pdisco_exp --run_name run_clevr_singleobj_large --train_data_d
 
 '''
 
+'''
+Command for Shapenet
+
+python train.py --pdisco_exp --device_ids 0 1 2 --run_name shapenet_test1 --train_data_dir /home/mprabhud/dataset/shapenet_renders/npys/split_allpt.txt --test_data_dir /home/mprabhud/dataset/shapenet_renders/npys/split_allpt.txt --root_log_dir /home/mprabhud/saksham/torch-gqn/logs
+'''
 
 '''
 python train.py --pdisco_exp --train_data_dir /projects/katefgroup/datasets/clevr_vqa/raw/npys/multi_obj_480_a --test_data_dir /projects/katefgroup/datasets/clevr_vqa/raw/npys/multi_obj_480_a --few_shot --batch_size 1 --run_name run_test_5
@@ -125,7 +130,7 @@ if __name__ == '__main__':
         model.load_state_dict(torch.load("/home/shamitl/projects/torch-gqn/logs/GQN/models/model-40000.pt"))
     
     # model.load_state_dict(torch.load("/home/shamitl/projects/torch-gqn/logs/GQN/models/run_clevr_singleobj_large/model-14000.pt"))
-    model.load_state_dict(torch.load("/home/shamitl/projects/torch-gqn/logs/GQN/models/model-60000.pt"))
+#     model.load_state_dict(torch.load("/home/shamitl/projects/torch-gqn/logs/GQN/models/model-60000.pt"))
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-4, betas=(0.9, 0.999), eps=1e-08)
     scheduler = AnnealingStepLR(optimizer, mu_i=5e-4, mu_f=5e-5, n=1.6e6)
