@@ -189,7 +189,7 @@ def sample_batch(x_data, v_data, D, M=None, seed=None):
 
     # Sample number of views
     if not M:
-        M = random.randint(2, K-1)
+        M = 1
 
     context_idx = random.sample(range(x_data.size(1)), M)
     query_idx = random.randint(0, x_data.size(1)-1)

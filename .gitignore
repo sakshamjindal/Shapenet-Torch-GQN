@@ -2,10 +2,13 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+.ipynb_checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
 
 # pytorch pth files
 *.pth
+*.pt
 
 #tendorboard logs
 logs/

@@ -29,7 +29,10 @@ python train.py --pdisco_exp --run_name run_clevr_singleobj_large --train_data_d
 '''
 Command for Shapenet
 
-python train.py --pdisco_exp --device_ids 0 1 2 --run_name shapenet_test1 --train_data_dir /home/mprabhud/dataset/shapenet_renders/npys/split_allpt.txt --test_data_dir /home/mprabhud/dataset/shapenet_renders/npys/split_allpt.txt --root_log_dir /home/mprabhud/saksham/torch-gqn/logs
+python train.py --pdisco_exp --device_ids 0 1 --run_name shapenet_single_view2 --train_data_dir /home/mprabhud/dataset/shapenet_renders/npys/split_allpt.txt --test_data_dir /home/mprabhud/dataset/shapenet_renders/npys/split_allpv.txt --root_log_dir /home/mprabhud/saksham/torch-gqn/logs --batch_size 64 --representation tower --shared_core True
+
+
+
 '''
 
 '''
@@ -247,7 +250,7 @@ if __name__ == '__main__':
             # st()
             elbo = model(x, v, v_q, x_q, sigma)
             
-            # Logs
+            # LogsThodi dinn 
             writer.add_scalar('train_loss', -elbo.mean(), t)
                 
             with torch.no_grad():
@@ -256,10 +259,10 @@ if __name__ == '__main__':
                     x_data_test = x_data_test.to(device)
                     v_data_test = v_data_test.to(device)
 
-                    x_test, v_test, x_q_test, v_q_test, context_idx, query_idx = sample_batch(x_data_test, v_data_test, D, M=3, seed=0)
+                    bash ~/rl_run.shx_test, v_test, x_q_test, v_q_test, context_idx, query_idx = sample_batch(x_data_test, v_data_test, D, M=1, seed=0)
                     # st()
                     x_test = x_test.permute(0,1,4,2,3)
-                    x_q_test = x_q_test.permute(0,3,1,2)
+                    bash ~/rl_run.shbash ~/rl_run.shbash ~/rl_run.shx_q_test = x_q_test.permute(0,3,1,2)
                     elbo_test = model(x_test, v_test, v_q_test, x_q_test, sigma)
                     
                     if len(args.device_ids)>1:

@@ -98,7 +98,7 @@ class GQN(nn.Module):
         # ELBO likelihood contribution update
         elbo += torch.sum(Normal(self.eta_g(u), sigma).log_prob(x_q), dim=[1,2,3])
 
-        return r, elbo
+        return elbo
     
     def generate(self, x, v, v_q):
         B, M, *_ = x.size()
