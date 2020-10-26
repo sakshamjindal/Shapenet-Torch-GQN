@@ -79,13 +79,14 @@ def transform_viewpoint_pdisco(v):
 
 
 class GQNDataset_pdisco(Dataset):
-    def __init__(self, root_dir, transform=None, target_transform=None, few_shot=False):
+    def __init__(self, root_dir, transform=None, target_transform=None, dataset= None,few_shot=False):
         self.root_dir = root_dir
         self.transform = transform
         self.target_transform = target_transform
         self.target_res = 64
         self.N = 10
         self.few_shot = few_shot
+        self.dataset = dataset
         
         if root_dir.endswith("txt"):
             data  = []
@@ -131,12 +132,14 @@ class GQNDataset_pdisco(Dataset):
         if not self.few_shot:
             images = F.interpolate(images, self.target_res)
 
+        
         images = images.permute(0,2,3,1)
         # print("Image shape: ", images.shape)
         # img_save = images.cpu().numpy()
         # plt.imsave("/home/shamitl/tmp/gqn_rgb_resized.jpg", img_save[0])
-
-        return images,viewpoints, {}
+        
+        if self.dataset!="Clevr":
+            return images,viewpoints, {}
     
         bbox_origin = data['bbox_origin']
         pix_T_cams_raw = data['pix_T_cams_raw']
@@ -201,4 +204,79 @@ def sample_batch(x_data, v_data, D, M=None, seed=None):
     # Sample query view
     x_q, v_q = x_data[:, query_idx], v_data[:, query_idx]
     
-    return x, v, x_q, v_q, context_idx, query_idx
+    x_metadata = {}
+    x_q_metadata = {}
+    
+#     if D == "Clevr":
+#         for k,v in metadata.items():
+#             x_metadata[k] = metadata[k][:,context_idx].tolist()
+#             x_q_metadata[k] = metadata[k][:, query_idx].tolist()
+        
+#         return x, v, x_q, v_q, x_metadata, x_q_metadata, context_idx, query_idx
+    
+    return x, v, x_q, v_q,context_idx, query_idx
+
+
+def bbox_rearrange(tree,boxes= [],classes={},all_classes=[]):
+    for i in range(0, tree.num_children):
+        updated_tree,boxes,classes,all_classes = bbox_rearrange(tree.children[i],boxes=boxes,classes=classes,all_classes=all_classes)
+        tree.children[i] = updated_tree     
+    if tree.function == "describe":
+#         if hyp.dataset_name=="bigbird":
+#             xmin,ymin,zmin,xmax,ymax,zmax = tree.bbox_camR_corners[0].astype(np.float32)
+#         else:
+        xmax,ymax,zmin,xmin,ymin,zmax = tree.bbox_origin
+        box = np.array([xmin,ymin,zmin,xmax,ymax,zmax])
+        tree.bbox_origin = box
+        boxes.append(box)
+        classes["shape"] = tree.word
+        all_classes.append(classes)
+        classes = {}
+    if tree.function == "combine":
+        if "large" in tree.word or "small" in tree.word:
+            classes["size"] = tree.word
+        elif "metal" in tree.word or "rubber" in tree.word:
+            classes["material"] = tree.word
+        else:
+            classes["color"] = tree.word
+    return tree,boxes,classes,all_classes
+
+
+def trees_rearrange(trees):
+    updated_trees =[]
+    all_bboxes = []
+    all_scores = []
+    all_classes_list = []
+    for tree in trees:
+      tree,boxes,_,all_classes = bbox_rearrange(tree,boxes=[],classes={},all_classes=[])
+      if hyp.do_shape:
+          classes = [class_val["shape"] for class_val  in all_classes]
+      elif hyp.do_color:
+          classes = [class_val["color"] for class_val  in all_classes]
+      elif hyp.do_material:
+          classes = [class_val["material"] for class_val  in all_classes]
+      elif hyp.do_style:
+          classes = [class_val["color"]+"_"+ class_val["material"] for class_val  in all_classes]
+      elif hyp.do_style_content:
+          classes = [class_val["shape"]+"/"+class_val["color"]+"_"+ class_val["material"] for class_val  in all_classes]
+      elif hyp.do_color_content:            
+          classes = [class_val["shape"]+"/"+class_val["color"] for class_val  in all_classes]
+      elif hyp.do_material_content:            
+          classes = [class_val["shape"]+"/"+ class_val["material"] for class_val  in all_classes]
+      else:            
+          classes = [class_val["shape"]+"/"+ class_val["color"] +"_"+class_val["material"] for class_val  in all_classes]
+      boxes = np.stack(boxes)
+      classes = np.stack(classes)
+      N,_  = boxes.shape 
+      assert N == len(classes)
+      scores = np.pad(np.ones([N]),[0,hyp.N-N])
+      boxes = np.pad(boxes,[[0,hyp.N-N],[0,0]])
+      classes = np.pad(classes,[0,hyp.N-N])
+      updated_trees.append(tree)
+      all_classes_list.append(classes)
+      all_scores.append(scores)
+      all_bboxes.append(boxes)
+    all_bboxes = np.stack(all_bboxes)
+    all_scores = np.stack(all_scores)
+    all_classes_list = np.stack(all_classes_list)
+    return all_bboxes,all_scores,all_classes_list

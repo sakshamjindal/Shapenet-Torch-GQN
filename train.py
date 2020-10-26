@@ -65,6 +65,8 @@ if __name__ == '__main__':
     parser.add_argument('--N', type=int, default=10, help='number of objects in scene')
     parser.add_argument('--few_shot', action='store_true')
     parser.add_argument('--few_shot_size', type=int, default=5, help='few shot size')
+    parser.add_argument('--resume_training', default='', type=str, metavar='PATH',
+                    help='path to latest checkpoint (default: none)')
     args = parser.parse_args()
 
     device = f"cuda:{args.device_ids[0]}" if torch.cuda.is_available() else "cpu"
@@ -129,6 +131,12 @@ if __name__ == '__main__':
     if len(args.device_ids)>1:
         model = nn.DataParallel(model, device_ids=args.device_ids)
     # st()
+    
+    if args.resume_training:
+        state_dict = torch.load(args.resume_training)
+        model.load_state_dict(state_dict)
+    
+    
     if args.few_shot:
         model.load_state_dict(torch.load("/home/shamitl/projects/torch-gqn/logs/GQN/models/model-40000.pt"))
     
@@ -247,6 +255,14 @@ if __name__ == '__main__':
             x, v, x_q, v_q, context_idx, query_idx = sample_batch(x_data, v_data, D)
             x = x.permute(0,1,4,2,3)
             x_q = x_q.permute(0,3,1,2)
+            
+            
+            if D=="Clevr":
+                x_data_, v_data_, label_list = utils_disco.get_cropped_rgb(x, v, metadata, args, __p, __u, context_idx[0])
+                x_q_data_, v_q_data_, label_list_q = utils_disco.get_cropped_rgb(x_q.unsqueeze(1), v_q.unsqueeze(1), metadata, args, __p, __u, query_idx)
+                x,v,x_q,v_q = x_data_, v_data_, x_q_data_, v_q_data_
+        
+            
             # st()
             elbo = model(x, v, v_q, x_q, sigma)
             
@@ -259,10 +275,18 @@ if __name__ == '__main__':
                     x_data_test = x_data_test.to(device)
                     v_data_test = v_data_test.to(device)
 
-                    bash ~/rl_run.shx_test, v_test, x_q_test, v_q_test, context_idx, query_idx = sample_batch(x_data_test, v_data_test, D, M=1, seed=0)
+                    x_test, v_test, x_q_test, v_q_test, context_idx, query_idx = sample_batch(x_data_test, v_data_test, D, M=1, seed=0)
                     # st()
                     x_test = x_test.permute(0,1,4,2,3)
-                    bash ~/rl_run.shbash ~/rl_run.shbash ~/rl_run.shx_q_test = x_q_test.permute(0,3,1,2)
+                    x_q_test = x_q_test.permute(0,3,1,2)
+                    
+                    
+                    if D=="Clevr":
+                        x_data_, v_data_, label_list = utils_disco.get_cropped_rgb(x_test, v_test, metadata, args, __p, __u, context_idx[0])
+                        x_q_data_, v_q_data_, label_list_q = utils_disco.get_cropped_rgb(x_q_test.unsqueeze(1), v_q_test.unsqueeze(1), metadata, args, __p, __u, query_idx)
+                        x_test,v_test,x_q_test,v_q_test = x_data_, v_data_, x_q_data_, v_q_data_
+
+                    
                     elbo_test = model(x_test, v_test, v_q_test, x_q_test, sigma)
                     
                     if len(args.device_ids)>1:
